@@ -1,4 +1,3 @@
-set JAVA_HOME=C:\eclipse\pleiades-4.8.0-java-win-64bit-jre_20180627\pleiades\java\8
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################
 @rem
