@@ -66,7 +66,7 @@ dependencies {
 
     compile "mirrg.boron:mirrg.boron.util:2.0+"
     adder "mirrg.boron:mirrg.boron.util:2.0+"
-    adder "com.google.code.gson:gson:2.8+"
+    //adder "com.google.code.gson:gson:2.8+"
 	compile group: 'org.influxdb', name: 'influxdb-java', version: '2.12'
 	adder group: 'org.influxdb', name: 'influxdb-java', version: '2.12'
 }
