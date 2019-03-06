@@ -1,0 +1,219 @@
+package mirrg.minecraft.influxdbuploader;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.logging.log4j.Logger;
+import org.influxdb.InfluxDB;
+import org.influxdb.InfluxDBFactory;
+import org.influxdb.dto.Point;
+
+import mirrg.boron.util.UtilsMath;
+import mirrg.boron.util.suppliterator.ISuppliterator;
+import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.world.gen.ChunkProviderServer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.event.CommandEvent;
+import net.minecraftforge.event.ServerChatEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
+
+@Mod(modid = ModInfluxDBUploader.MODID, name = ModInfluxDBUploader.NAME, version = ModInfluxDBUploader.VERSION, acceptableRemoteVersions = "*")
+public class ModInfluxDBUploader
+{
+
+	public static final String MODID = "mirrg.minecraft.influxdbuploader";
+	public static final String NAME = "InfluxDBUploader";
+	public static final String VERSION = "undefined";
+
+	@SuppressWarnings("unused")
+	private static Logger logger;
+
+	private static String url;
+	private static String userName;
+	private static String password;
+	private static String database;
+	private static String serverName;
+
+	@EventHandler
+	public void preInit(FMLPreInitializationEvent event)
+	{
+		logger = event.getModLog();
+
+		{
+			Configuration configuration = new Configuration(event.getSuggestedConfigurationFile());
+			url = configuration.getString("url", "connection", "http://example.com/", "InfluxDB Uploading URL");
+			userName = configuration.getString("userName", "connection", "userName", "User name for connection");
+			password = configuration.getString("password", "connection", "password", "Password for the user");
+			database = configuration.getString("database", "connection", "database001", "Database name of InfluxDB");
+			serverName = configuration.getString("serverName", "data", "Minecraft Server", "Minecraft server name");
+			configuration.save();
+		}
+
+		InfluxDB influxDb = InfluxDBFactory.connect(url, userName, password);
+		influxDb.setDatabase(database);
+
+		MinecraftForge.EVENT_BUS.register(new Object() {
+			@SubscribeEvent
+			public void handle(ServerChatEvent event)
+			{
+				Point.Builder builder = Point.measurement("message");
+				builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
+
+				builder.tag("SERVER", serverName);
+				builder.addField("server", serverName);
+				builder.tag("TYPE", "chat");
+				builder.addField("type", "chat");
+
+				builder.addField("sender", event.getUsername());
+				builder.addField("message", event.getMessage());
+
+				influxDb.write(builder.build());
+			}
+		});
+
+		MinecraftForge.EVENT_BUS.register(new Object() {
+			@SubscribeEvent
+			public void handle(CommandEvent event)
+			{
+				Point.Builder builder = Point.measurement("message");
+				builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
+
+				builder.tag("SERVER", serverName);
+				builder.addField("server", serverName);
+				builder.tag("TYPE", "command");
+				builder.addField("type", "command");
+
+				builder.addField("sender", event.getSender().getName());
+				builder.addField("message", "/" + ISuppliterator.concat(
+					ISuppliterator.of(event.getCommand().getName()),
+					ISuppliterator.ofObjArray(event.getParameters()))
+					.join(" "));
+
+				influxDb.write(builder.build());
+			}
+		});
+
+		MinecraftForge.EVENT_BUS.register(new Object() {
+			LocalDateTime timeLast = null;
+
+			@SubscribeEvent
+			public void handle(WorldTickEvent event)
+			{
+
+				// world
+				{
+					if (timeLast == null) {
+						timeLast = LocalDateTime.now();
+					}
+					LocalDateTime timeNow = LocalDateTime.now();
+					if (!timestamp(timeLast).equals(timestamp(timeNow))) {
+
+						send(event);
+
+					}
+					timeLast = timeNow;
+				}
+
+				// players
+				for (EntityPlayer player : event.world.playerEntities) {
+					if (player instanceof EntityPlayerMP) {
+						EntityPlayerMP playerMP = (EntityPlayerMP) player;
+
+						Point.Builder builder = Point.measurement("player");
+
+						builder.tag("PLAYER_UUID", playerMP.getUniqueID().toString());
+						builder.addField("player_uuid", playerMP.getUniqueID().toString());
+						builder.tag("PLAYER_NAME", playerMP.getName());
+						builder.addField("player_name", playerMP.getName());
+						builder.tag("PLAYER_DISPLAY_NAME", playerMP.getDisplayNameString());
+						builder.addField("player_displayName", playerMP.getDisplayNameString());
+
+						builder.addField("player_dimension", playerMP.dimension);
+						builder.addField("player_x", playerMP.posX);
+						builder.addField("player_y", playerMP.posY);
+						builder.addField("player_z", playerMP.posZ);
+
+						builder.addField("player_invisible", playerMP.isInvisible() ? 1 : 0);
+						builder.addField("player_health", playerMP.getHealth());
+						builder.addField("player_maxHealth", playerMP.getMaxHealth());
+						builder.addField("player_experienceLevel", playerMP.experienceLevel);
+						builder.addField("player_gamemode", playerMP.interactionManager.getGameType().getName());
+						builder.addField("player_allowEdit", playerMP.capabilities.allowEdit);
+						builder.addField("player_allowFlying", playerMP.capabilities.allowFlying);
+						builder.addField("player_disableDamage", playerMP.capabilities.disableDamage);
+						builder.addField("player_isCreativeMode", playerMP.capabilities.isCreativeMode);
+						builder.addField("player_isFlying", playerMP.capabilities.isFlying);
+
+						influxDb.write(builder.build());
+					}
+				}
+
+			}
+
+			private LocalDateTime timestamp(LocalDateTime time)
+			{
+				time = time.withSecond(time.getSecond() / 5 * 5);
+				time = time.withNano(0);
+				return time;
+			}
+
+			private void send(WorldTickEvent event)
+			{
+				Point.Builder builder = Point.measurement("world");
+				builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
+
+				builder.tag("SERVER", serverName);
+				builder.addField("server", serverName);
+
+				builder.tag("WORLD_ID", "" + event.world.provider.getDimension());
+				builder.addField("world_id", event.world.provider.getDimension());
+				builder.tag("WORLD_NAME", event.world.provider.getDimensionType().getName());
+				builder.addField("world_name", event.world.provider.getDimensionType().getName());
+
+				builder.addField("time_tick", event.world.getWorldTime());
+				builder.addField("time_day", event.world.getWorldTime() / 24000);
+				builder.addField("time_tickOfDay", event.world.getWorldTime() % 24000);
+				builder.addField("time_clock", String.format("%02d:%02d",
+					(event.world.getWorldTime() % 24000) / 1000,
+					UtilsMath.trim((int) (((event.world.getWorldTime() % 24000) % 1000) / 1000.0 * 60.0), 0, 59)));
+				builder.addField("time_raining", event.world.isRaining());
+				builder.addField("time_daytime", event.world.isDaytime());
+				builder.addField("time_thundering", event.world.isThundering());
+				builder.addField("time_moonPhase", event.world.provider.getMoonPhase(event.world.getWorldTime()));
+
+				builder.addField("count_chunks", event.world.getChunkProvider() instanceof ChunkProviderServer
+					? ((ChunkProviderServer) event.world.getChunkProvider()).getLoadedChunkCount()
+					: -1);
+
+				builder.addField("count_tileEntities", event.world.loadedTileEntityList.size());
+
+				builder.addField("count_entities", event.world.loadedEntityList.size());
+				builder.addField("count_entities_monster", event.world.countEntities(EnumCreatureType.MONSTER, false));
+				builder.addField("count_entities_creature", event.world.countEntities(EnumCreatureType.CREATURE, false));
+				builder.addField("count_entities_waterCreature", event.world.countEntities(EnumCreatureType.WATER_CREATURE, false));
+				builder.addField("count_entities_ambient", event.world.countEntities(EnumCreatureType.AMBIENT, false));
+				builder.addField("count_entities_player", event.world.playerEntities.size());
+				builder.addField("count_entities_item", event.world.loadedEntityList.stream().filter(e -> e instanceof EntityItem).count());
+
+				influxDb.write(builder.build());
+			}
+		});
+	}
+
+	@EventHandler
+	public void init(FMLInitializationEvent event)
+	{
+
+	}
+
+}
