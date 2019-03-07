@@ -15,11 +15,14 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.ServerChatEvent;
+import net.minecraftforge.event.entity.item.ItemExpireEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -61,6 +64,51 @@ public class ModInfluxDBUploader
 
 		InfluxDB influxDb = InfluxDBFactory.connect(url, userName, password);
 		influxDb.setDatabase(database);
+
+		MinecraftForge.EVENT_BUS.register(new Object() {
+			@SubscribeEvent
+			public void handle(ItemExpireEvent event)
+			{
+				try {
+					Point.Builder builder = Point.measurement("event");
+					builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
+
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("TYPE", "itemExpire");
+					builder.addField("type", "itemExpire");
+
+					ItemStack itemStack = event.getEntityItem().getItem();
+					builder.addField("sender", itemStack.getDisplayName());
+
+					builder.addField("item", itemStack.getItem().getRegistryName().toString());
+					builder.addField("metadata", itemStack.getMetadata());
+					builder.addField("count", itemStack.getCount());
+					builder.addField("hasNbt", itemStack.hasTagCompound());
+					builder.addField("x", event.getEntityItem().posX);
+					builder.addField("y", event.getEntityItem().posY);
+					builder.addField("z", event.getEntityItem().posZ);
+
+					builder.addField("message", String.format("%s:%s*%s%s@(%.0f,%.0f,%.0f)",
+						itemStack.getItem().getRegistryName().toString(),
+						itemStack.getMetadata(),
+						itemStack.getCount(),
+						itemStack.hasTagCompound() ? "(NBT)" : "",
+						event.getEntityItem().posX,
+						event.getEntityItem().posY,
+						event.getEntityItem().posZ));
+					{
+						NBTTagCompound nbt = new NBTTagCompound();
+						itemStack.writeToNBT(nbt);
+						builder.addField("message_long", nbt.toString());
+					}
+
+					influxDb.write(builder.build());
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error", e);
+				}
+			}
+		});
 
 		MinecraftForge.EVENT_BUS.register(new Object() {
 			@SubscribeEvent
