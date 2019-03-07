@@ -66,18 +66,22 @@ public class ModInfluxDBUploader
 			@SubscribeEvent
 			public void handle(ServerChatEvent event)
 			{
-				Point.Builder builder = Point.measurement("message");
-				builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
+				try {
+					Point.Builder builder = Point.measurement("message");
+					builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
 
-				builder.tag("SERVER", serverName);
-				builder.addField("server", serverName);
-				builder.tag("TYPE", "chat");
-				builder.addField("type", "chat");
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("TYPE", "chat");
+					builder.addField("type", "chat");
 
-				builder.addField("sender", event.getUsername());
-				builder.addField("message", event.getMessage());
+					builder.addField("sender", event.getUsername());
+					builder.addField("message", event.getMessage());
 
-				influxDb.write(builder.build());
+					influxDb.write(builder.build());
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error", e);
+				}
 			}
 		});
 
@@ -85,21 +89,25 @@ public class ModInfluxDBUploader
 			@SubscribeEvent
 			public void handle(CommandEvent event)
 			{
-				Point.Builder builder = Point.measurement("message");
-				builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
+				try {
+					Point.Builder builder = Point.measurement("message");
+					builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
 
-				builder.tag("SERVER", serverName);
-				builder.addField("server", serverName);
-				builder.tag("TYPE", "command");
-				builder.addField("type", "command");
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("TYPE", "command");
+					builder.addField("type", "command");
 
-				builder.addField("sender", event.getSender().getName());
-				builder.addField("message", "/" + ISuppliterator.concat(
-					ISuppliterator.of(event.getCommand().getName()),
-					ISuppliterator.ofObjArray(event.getParameters()))
-					.join(" "));
+					builder.addField("sender", event.getSender().getName());
+					builder.addField("message", "/" + ISuppliterator.concat(
+						ISuppliterator.of(event.getCommand().getName()),
+						ISuppliterator.ofObjArray(event.getParameters()))
+						.join(" "));
 
-				influxDb.write(builder.build());
+					influxDb.write(builder.build());
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error", e);
+				}
 			}
 		});
 
@@ -109,58 +117,67 @@ public class ModInfluxDBUploader
 			@SubscribeEvent
 			public void handle(WorldTickEvent event)
 			{
+				if (timeLast == null) {
+					timeLast = LocalDateTime.now();
+				}
+				LocalDateTime timeNow = LocalDateTime.now();
 
-				// world
-				{
-					if (timeLast == null) {
-						timeLast = LocalDateTime.now();
-					}
-					LocalDateTime timeNow = LocalDateTime.now();
-					if (!timestamp(timeLast).equals(timestamp(timeNow))) {
-
-						send(event);
-
-					}
-					timeLast = timeNow;
+				if (!floor5seconds(timeLast).equals(floor5seconds(timeNow))) {
+					onTime(event);
 				}
 
-				// players
-				for (EntityPlayer player : event.world.playerEntities) {
-					if (player instanceof EntityPlayerMP) {
-						EntityPlayerMP playerMP = (EntityPlayerMP) player;
-
-						Point.Builder builder = Point.measurement("player");
-
-						builder.tag("PLAYER_UUID", playerMP.getUniqueID().toString());
-						builder.addField("player_uuid", playerMP.getUniqueID().toString());
-						builder.tag("PLAYER_NAME", playerMP.getName());
-						builder.addField("player_name", playerMP.getName());
-						builder.tag("PLAYER_DISPLAY_NAME", playerMP.getDisplayNameString());
-						builder.addField("player_displayName", playerMP.getDisplayNameString());
-
-						builder.addField("player_dimension", playerMP.dimension);
-						builder.addField("player_x", playerMP.posX);
-						builder.addField("player_y", playerMP.posY);
-						builder.addField("player_z", playerMP.posZ);
-
-						builder.addField("player_invisible", playerMP.isInvisible() ? 1 : 0);
-						builder.addField("player_health", playerMP.getHealth());
-						builder.addField("player_maxHealth", playerMP.getMaxHealth());
-						builder.addField("player_experienceLevel", playerMP.experienceLevel);
-						builder.addField("player_gamemode", playerMP.interactionManager.getGameType().getName());
-						builder.addField("player_allowEdit", playerMP.capabilities.allowEdit);
-						builder.addField("player_allowFlying", playerMP.capabilities.allowFlying);
-						builder.addField("player_disableDamage", playerMP.capabilities.disableDamage);
-						builder.addField("player_isCreativeMode", playerMP.capabilities.isCreativeMode);
-						builder.addField("player_isFlying", playerMP.capabilities.isFlying);
-
-						influxDb.write(builder.build());
-					}
-				}
-
+				timeLast = timeNow;
 			}
 
-			private LocalDateTime timestamp(LocalDateTime time)
+			private void onTime(WorldTickEvent event)
+			{
+				if (event.world.isRemote) return;
+
+				try {
+
+					// world
+					send(event);
+
+					// players
+					for (EntityPlayer player : event.world.playerEntities) {
+						if (player instanceof EntityPlayerMP) {
+							EntityPlayerMP playerMP = (EntityPlayerMP) player;
+
+							Point.Builder builder = Point.measurement("player");
+
+							builder.tag("PLAYER_UUID", playerMP.getUniqueID().toString());
+							builder.addField("player_uuid", playerMP.getUniqueID().toString());
+							builder.tag("PLAYER_NAME", playerMP.getName());
+							builder.addField("player_name", playerMP.getName());
+							builder.tag("PLAYER_DISPLAY_NAME", playerMP.getDisplayNameString());
+							builder.addField("player_displayName", playerMP.getDisplayNameString());
+
+							builder.addField("player_dimension", playerMP.dimension);
+							builder.addField("player_x", playerMP.posX);
+							builder.addField("player_y", playerMP.posY);
+							builder.addField("player_z", playerMP.posZ);
+
+							builder.addField("player_invisible", playerMP.isInvisible() ? 1 : 0);
+							builder.addField("player_health", playerMP.getHealth());
+							builder.addField("player_maxHealth", playerMP.getMaxHealth());
+							builder.addField("player_experienceLevel", playerMP.experienceLevel);
+							builder.addField("player_gamemode", playerMP.interactionManager.getGameType().getName());
+							builder.addField("player_allowEdit", playerMP.capabilities.allowEdit);
+							builder.addField("player_allowFlying", playerMP.capabilities.allowFlying);
+							builder.addField("player_disableDamage", playerMP.capabilities.disableDamage);
+							builder.addField("player_isCreativeMode", playerMP.capabilities.isCreativeMode);
+							builder.addField("player_isFlying", playerMP.capabilities.isFlying);
+
+							influxDb.write(builder.build());
+						}
+					}
+
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error", e);
+				}
+			}
+
+			private LocalDateTime floor5seconds(LocalDateTime time)
 			{
 				time = time.withSecond(time.getSecond() / 5 * 5);
 				time = time.withNano(0);
