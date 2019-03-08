@@ -38,7 +38,6 @@ public class ModInfluxDBUploader
 	public static final String NAME = "InfluxDBUploader";
 	public static final String VERSION = "undefined";
 
-	@SuppressWarnings("unused")
 	private static Logger logger;
 
 	private static String url;
