@@ -289,29 +289,42 @@ public class ModInfluxDBUploader
 		Thread thread = new Thread(() -> {
 			try {
 				while (true) {
-					List<Point> points2 = new ArrayList<>();
 
+					// たまっているポイントを掬う
+					List<Point> points2 = new ArrayList<>();
 					synchronized (points) {
 						points2.addAll(points);
 						points.clear();
 					}
 
-					for (Point point : points2) {
-						influxDb.write(point);
-					}
+					// ポイントがたまっていたら全部吐き出す（吐き出しはデーモンスレッドではないので中断されない）
+					if (!points2.isEmpty()) runSending(points2);
 
+					// ポイントがたまっていなかったら待つ
 					synchronized (points) {
-						if (!points.isEmpty()) continue;
-						points.wait();
+						if (points.isEmpty()) {
+							points.wait();
+						}
 					}
 
 				}
 			} catch (InterruptedException e) {
 
 			}
-		});
+		}, "InfluxDB Daemon Thread");
 		thread.setDaemon(true);
 		thread.start();
+	}
+
+	public void runSending(List<Point> points) throws InterruptedException
+	{
+		Thread thread = new Thread(() -> {
+			for (Point point : points) {
+				influxDb.write(point);
+			}
+		}, "InfluxDB Sending Thread");
+		thread.start();
+		thread.join();
 	}
 
 	public void sendPoint(Point point)
