@@ -2,6 +2,10 @@ package mirrg.minecraft.influxdbuploader;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Logger;
@@ -61,8 +65,9 @@ public class ModInfluxDBUploader
 			configuration.save();
 		}
 
-		InfluxDB influxDb = InfluxDBFactory.connect(url, userName, password);
+		influxDb = InfluxDBFactory.connect(url, userName, password);
 		influxDb.setDatabase(database);
+		startSender();
 
 		MinecraftForge.EVENT_BUS.register(new Object() {
 			@SubscribeEvent
@@ -102,7 +107,7 @@ public class ModInfluxDBUploader
 						builder.addField("message_long", nbt.toString());
 					}
 
-					influxDb.write(builder.build());
+					sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error", e);
 				}
@@ -125,7 +130,7 @@ public class ModInfluxDBUploader
 					builder.addField("sender", event.getUsername());
 					builder.addField("message", event.getMessage());
 
-					influxDb.write(builder.build());
+					sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error", e);
 				}
@@ -151,7 +156,7 @@ public class ModInfluxDBUploader
 						ISuppliterator.ofObjArray(event.getParameters()))
 						.join(" "));
 
-					influxDb.write(builder.build());
+					sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error", e);
 				}
@@ -215,7 +220,7 @@ public class ModInfluxDBUploader
 							builder.addField("player_isCreativeMode", playerMP.capabilities.isCreativeMode);
 							builder.addField("player_isFlying", playerMP.capabilities.isFlying);
 
-							influxDb.write(builder.build());
+							sendPoint(builder.build());
 						}
 					}
 
@@ -269,10 +274,55 @@ public class ModInfluxDBUploader
 				builder.addField("count_entities_player", event.world.playerEntities.size());
 				builder.addField("count_entities_item", event.world.loadedEntityList.stream().filter(e -> e instanceof EntityItem).count());
 
-				influxDb.write(builder.build());
+				sendPoint(builder.build());
 			}
 		});
 	}
+
+	//
+
+	private InfluxDB influxDb;
+	private Deque<Point> points = new ArrayDeque<>();
+
+	public void startSender()
+	{
+		Thread thread = new Thread(() -> {
+			try {
+				while (true) {
+					List<Point> points2 = new ArrayList<>();
+
+					synchronized (points) {
+						points2.addAll(points);
+						points.clear();
+					}
+
+					for (Point point : points2) {
+						influxDb.write(point);
+					}
+
+					synchronized (points) {
+						if (!points.isEmpty()) continue;
+						points.wait();
+					}
+
+				}
+			} catch (InterruptedException e) {
+
+			}
+		});
+		thread.setDaemon(true);
+		thread.start();
+	}
+
+	public void sendPoint(Point point)
+	{
+		synchronized (points) {
+			points.addLast(point);
+			points.notify();
+		}
+	}
+
+	//
 
 	@EventHandler
 	public void init(FMLInitializationEvent event)
