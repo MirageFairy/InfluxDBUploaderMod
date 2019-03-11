@@ -5,7 +5,9 @@ import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Logger;
@@ -21,6 +23,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
@@ -164,11 +167,13 @@ public class ModInfluxDBUploader
 		});
 
 		MinecraftForge.EVENT_BUS.register(new Object() {
-			LocalDateTime timeLast = null;
+			Map<World, LocalDateTime> timeLastTable = new HashMap<>();
 
 			@SubscribeEvent
 			public void handle(WorldTickEvent event)
 			{
+				LocalDateTime timeLast = timeLastTable.get(event.world);
+
 				if (timeLast == null) {
 					timeLast = LocalDateTime.now();
 				}
@@ -178,7 +183,7 @@ public class ModInfluxDBUploader
 					onTime(event);
 				}
 
-				timeLast = timeNow;
+				timeLastTable.put(event.world, timeNow);
 			}
 
 			private void onTime(WorldTickEvent event)
