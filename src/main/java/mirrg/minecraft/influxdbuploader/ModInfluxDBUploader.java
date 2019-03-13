@@ -11,6 +11,7 @@ import java.util.Map;
 import org.apache.logging.log4j.Logger;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
+import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
 
 import mirrg.boron.util.UtilsMath;
@@ -318,9 +319,9 @@ public class ModInfluxDBUploader
 	public void runSending(List<Point> points) throws InterruptedException
 	{
 		Thread thread = new Thread(() -> {
-			for (Point point : points) {
-				influxDb.write(point);
-			}
+			influxDb.write(BatchPoints.database(database)
+				.points(ISuppliterator.ofIterable(points).toArray(Point[]::new))
+				.build());
 		}, "InfluxDB Sending Thread");
 		thread.start();
 		thread.join();
