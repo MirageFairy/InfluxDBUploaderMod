@@ -78,7 +78,6 @@ public class ModInfluxDBUploader
 			{
 				try {
 					Point.Builder builder = Point.measurement("event");
-					builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
 
 					builder.tag("SERVER", serverName);
 					builder.addField("server", serverName);
@@ -123,7 +122,6 @@ public class ModInfluxDBUploader
 			{
 				try {
 					Point.Builder builder = Point.measurement("message");
-					builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
 
 					builder.tag("SERVER", serverName);
 					builder.addField("server", serverName);
@@ -146,7 +144,6 @@ public class ModInfluxDBUploader
 			{
 				try {
 					Point.Builder builder = Point.measurement("message");
-					builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
 
 					builder.tag("SERVER", serverName);
 					builder.addField("server", serverName);
@@ -244,7 +241,6 @@ public class ModInfluxDBUploader
 			private void send(WorldTickEvent event)
 			{
 				Point.Builder builder = Point.measurement("world");
-				builder.time(LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(9)), TimeUnit.SECONDS);
 
 				builder.tag("SERVER", serverName);
 				builder.addField("server", serverName);
