@@ -42,7 +42,7 @@ public class ModInfluxDBUploader
 
 	public static final String MODID = "mirrg.minecraft.influxdbuploader";
 	public static final String NAME = "InfluxDBUploader";
-	public static final String VERSION = "undefined";
+	public static final String VERSION = "0.0.5";
 
 	private static Logger logger;
 
