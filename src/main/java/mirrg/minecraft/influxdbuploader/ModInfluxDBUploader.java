@@ -90,18 +90,20 @@ public class ModInfluxDBUploader
 					builder.addField("metadata", itemStack.getMetadata());
 					builder.addField("count", itemStack.getCount());
 					builder.addField("hasNbt", itemStack.hasTagCompound());
+					builder.addField("dimension", event.getEntityItem().dimension);
 					builder.addField("x", event.getEntityItem().posX);
 					builder.addField("y", event.getEntityItem().posY);
 					builder.addField("z", event.getEntityItem().posZ);
 
-					builder.addField("message", String.format("%s:%s*%s%s@(%.0f,%.0f,%.0f)",
+					builder.addField("message", String.format("%s:%s*%s%s@(%.0f,%.0f,%.0f@DIM%d)",
 						itemStack.getItem().getRegistryName().toString(),
 						itemStack.getMetadata(),
 						itemStack.getCount(),
 						itemStack.hasTagCompound() ? "(NBT)" : "",
 						event.getEntityItem().posX,
 						event.getEntityItem().posY,
-						event.getEntityItem().posZ));
+						event.getEntityItem().posZ,
+						event.getEntityItem().dimension));
 					{
 						NBTTagCompound nbt = new NBTTagCompound();
 						itemStack.writeToNBT(nbt);
