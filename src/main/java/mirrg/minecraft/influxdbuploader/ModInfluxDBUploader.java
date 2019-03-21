@@ -112,7 +112,7 @@ public class ModInfluxDBUploader
 
 					sendPoint(builder.build());
 				} catch (Exception e) {
-					logger.error("InfluxDB Upload Error", e);
+					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
 				}
 			}
 		});
@@ -134,7 +134,7 @@ public class ModInfluxDBUploader
 
 					sendPoint(builder.build());
 				} catch (Exception e) {
-					logger.error("InfluxDB Upload Error", e);
+					logger.error("InfluxDB Upload Error(2): " + e.getMessage());
 				}
 			}
 		});
@@ -159,7 +159,7 @@ public class ModInfluxDBUploader
 
 					sendPoint(builder.build());
 				} catch (Exception e) {
-					logger.error("InfluxDB Upload Error", e);
+					logger.error("InfluxDB Upload Error(3): " + e.getMessage());
 				}
 			}
 		});
@@ -228,7 +228,7 @@ public class ModInfluxDBUploader
 					}
 
 				} catch (Exception e) {
-					logger.error("InfluxDB Upload Error", e);
+					logger.error("InfluxDB Upload Error(4): " + e.getMessage());
 				}
 			}
 
