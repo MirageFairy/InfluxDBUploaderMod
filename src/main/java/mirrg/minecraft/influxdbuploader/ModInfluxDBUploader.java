@@ -46,6 +46,7 @@ public class ModInfluxDBUploader
 
 	private static Logger logger;
 
+	private static boolean enableUploading;
 	private static String url;
 	private static String userName;
 	private static String password;
@@ -59,6 +60,7 @@ public class ModInfluxDBUploader
 
 		{
 			Configuration configuration = new Configuration(event.getSuggestedConfigurationFile());
+			enableUploading = configuration.getBoolean("enableUploading", "general", false, "If true, uploading is enable");
 			url = configuration.getString("url", "connection", "http://example.com/", "InfluxDB Uploading URL");
 			userName = configuration.getString("userName", "connection", "userName", "User name for connection");
 			password = configuration.getString("password", "connection", "password", "Password for the user");
@@ -75,6 +77,8 @@ public class ModInfluxDBUploader
 			@SubscribeEvent
 			public void handle(ItemExpireEvent event)
 			{
+				if (!enableUploading) return;
+
 				try {
 					Point.Builder builder = Point.measurement("event");
 
@@ -121,6 +125,8 @@ public class ModInfluxDBUploader
 			@SubscribeEvent
 			public void handle(ServerChatEvent event)
 			{
+				if (!enableUploading) return;
+
 				try {
 					Point.Builder builder = Point.measurement("message");
 
@@ -143,6 +149,8 @@ public class ModInfluxDBUploader
 			@SubscribeEvent
 			public void handle(CommandEvent event)
 			{
+				if (!enableUploading) return;
+
 				try {
 					Point.Builder builder = Point.measurement("message");
 
@@ -170,6 +178,8 @@ public class ModInfluxDBUploader
 			@SubscribeEvent
 			public void handle(WorldTickEvent event)
 			{
+				if (!enableUploading) return;
+
 				LocalDateTime timeLast = timeLastTable.get(event.world);
 
 				if (timeLast == null) {
