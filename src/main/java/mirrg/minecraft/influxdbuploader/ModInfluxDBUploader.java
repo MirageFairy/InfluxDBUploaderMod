@@ -16,6 +16,7 @@ import org.influxdb.dto.Point;
 
 import mirrg.boron.util.UtilsMath;
 import mirrg.boron.util.suppliterator.ISuppliterator;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -29,6 +30,7 @@ import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.entity.item.ItemExpireEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -289,6 +291,52 @@ public class ModInfluxDBUploader
 				sendPoint(builder.build());
 			}
 		});
+
+		MinecraftForge.EVENT_BUS.register(new Object() {
+			@SubscribeEvent
+			public void handle(LivingDeathEvent event)
+			{
+				if (!enableUploading) return;
+
+				try {
+					Point.Builder builder = Point.measurement("event");
+
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("TYPE", "livingDeath");
+					builder.addField("type", "livingDeath");
+
+					EntityLivingBase entity = event.getEntityLiving();
+					builder.addField("sender", entity.getName());
+
+					builder.addField("class", entity.getClass().getName());
+					builder.addField("dimension", entity.dimension);
+					builder.addField("x", entity.posX);
+					builder.addField("y", entity.posY);
+					builder.addField("z", entity.posZ);
+
+					builder.addField("message", String.format("%s: \"%s\" @(%.0f,%.0f,%.0f@DIM%d)",
+						entity.getName(),
+						event.getSource() != null
+							? event.getSource().getDeathMessage(entity)
+							: "unspecified death message",
+						entity.posX,
+						entity.posY,
+						entity.posZ,
+						entity.dimension));
+					{
+						NBTTagCompound nbt = new NBTTagCompound();
+						entity.writeToNBT(nbt);
+						builder.addField("message_long", nbt.toString());
+					}
+
+					sendPoint(builder.build());
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
+				}
+			}
+		});
+
 	}
 
 	//
