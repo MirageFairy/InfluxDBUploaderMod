@@ -318,7 +318,7 @@ public class ModInfluxDBUploader
 					builder.addField("message", String.format("%s: \"%s\" @(%.0f,%.0f,%.0f@DIM%d)",
 						entity.getName(),
 						event.getSource() != null
-							? event.getSource().getDeathMessage(entity)
+							? event.getSource().getDeathMessage(entity).getUnformattedText()
 							: "unspecified death message",
 						entity.posX,
 						entity.posY,
