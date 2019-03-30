@@ -31,6 +31,7 @@ import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.entity.item.ItemExpireEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDestroyBlockEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -331,6 +332,46 @@ public class ModInfluxDBUploader
 						entity.writeToNBT(nbt);
 						builder.addField("message_long", nbt.toString());
 					}
+
+					sendPoint(builder.build());
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
+				}
+			}
+		});
+
+		MinecraftForge.EVENT_BUS.register(new Object() {
+			@SubscribeEvent
+			public void handle(LivingDestroyBlockEvent event)
+			{
+				if (!enableUploading) return;
+
+				try {
+					Point.Builder builder = Point.measurement("event");
+
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("TYPE", "livingDestroyBlock");
+					builder.addField("type", "livingDestroyBlock");
+
+					EntityLivingBase entity = event.getEntityLiving();
+					builder.addField("sender", entity.getName());
+
+					builder.addField("class", entity.getClass().getName());
+					builder.addField("uuid", entity.getUniqueID().toString());
+					builder.addField("state", event.getState().toString());
+					builder.addField("dimension", entity.dimension);
+					builder.addField("x", event.getPos().getX());
+					builder.addField("y", event.getPos().getY());
+					builder.addField("z", event.getPos().getZ());
+
+					builder.addField("message", String.format("(%s).destroy!(%s):@(DIM%d,%.0f,%.0f,%.0f)",
+						entity.getName(),
+						event.getState().toString(),
+						entity.dimension,
+						entity.posX,
+						entity.posY,
+						entity.posZ));
 
 					sendPoint(builder.build());
 				} catch (Exception e) {
