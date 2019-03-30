@@ -96,6 +96,7 @@ public class ModInfluxDBUploader
 					builder.addField("metadata", itemStack.getMetadata());
 					builder.addField("count", itemStack.getCount());
 					builder.addField("hasNbt", itemStack.hasTagCompound());
+					builder.addField("uuid", event.getEntityItem().getUniqueID().toString());
 					builder.addField("dimension", event.getEntityItem().dimension);
 					builder.addField("x", event.getEntityItem().posX);
 					builder.addField("y", event.getEntityItem().posY);
@@ -310,6 +311,7 @@ public class ModInfluxDBUploader
 					builder.addField("sender", entity.getName());
 
 					builder.addField("class", entity.getClass().getName());
+					builder.addField("uuid", entity.getUniqueID().toString());
 					builder.addField("dimension", entity.dimension);
 					builder.addField("x", entity.posX);
 					builder.addField("y", entity.posY);
