@@ -221,6 +221,8 @@ public class ModInfluxDBUploader
 
 							Point.Builder builder = Point.measurement("player");
 
+							builder.tag("SERVER", serverName);
+							builder.addField("server", serverName);
 							builder.tag("PLAYER_UUID", playerMP.getUniqueID().toString());
 							builder.addField("player_uuid", playerMP.getUniqueID().toString());
 							builder.tag("PLAYER_NAME", playerMP.getName());
