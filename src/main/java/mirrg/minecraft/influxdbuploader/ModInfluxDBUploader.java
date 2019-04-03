@@ -199,7 +199,7 @@ public class ModInfluxDBUploader
 
 				if (!floor1minute(timeLast).equals(floor1minute(timeNow))) {
 					event.world.getPersistentChunks().forEach((chunkPos, ticket) -> {
-						sendChunkLoader(chunkPos, ticket);
+						sendChunkLoader(event.world, chunkPos, ticket);
 					});
 				}
 
@@ -311,7 +311,7 @@ public class ModInfluxDBUploader
 
 			}
 
-			private void sendChunkLoader(ChunkPos chunkPos, Ticket ticket)
+			private void sendChunkLoader(World world, ChunkPos chunkPos, Ticket ticket)
 			{
 				try {
 
@@ -323,6 +323,8 @@ public class ModInfluxDBUploader
 					builder.addField("mod", ticket.getModId());
 					builder.tag("PLAYER", "" + ticket.getPlayerName());
 					builder.addField("player", "" + ticket.getPlayerName());
+					builder.tag("WORLD_ID", "" + world.provider.getDimension());
+					builder.addField("world_id", world.provider.getDimension());
 
 					builder.addField("chunk_x", chunkPos.x);
 					builder.addField("chunk_z", chunkPos.z);
