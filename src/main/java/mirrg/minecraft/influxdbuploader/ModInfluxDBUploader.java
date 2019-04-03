@@ -198,6 +198,13 @@ public class ModInfluxDBUploader
 				timeLastTable.put(event.world, timeNow);
 			}
 
+			private LocalDateTime floor5seconds(LocalDateTime time)
+			{
+				time = time.withSecond(time.getSecond() / 5 * 5);
+				time = time.withNano(0);
+				return time;
+			}
+
 			private void onTime(WorldTickEvent event)
 			{
 				if (event.world.isRemote) return;
@@ -244,13 +251,6 @@ public class ModInfluxDBUploader
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(4): " + e.getMessage());
 				}
-			}
-
-			private LocalDateTime floor5seconds(LocalDateTime time)
-			{
-				time = time.withSecond(time.getSecond() / 5 * 5);
-				time = time.withNano(0);
-				return time;
 			}
 
 			private void send(WorldTickEvent event)
