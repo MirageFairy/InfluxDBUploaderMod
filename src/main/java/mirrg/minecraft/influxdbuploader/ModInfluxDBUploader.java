@@ -23,8 +23,10 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.ChunkProviderServer;
+import net.minecraftforge.common.ForgeChunkManager.Ticket;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.CommandEvent;
@@ -195,12 +197,25 @@ public class ModInfluxDBUploader
 					onTime(event);
 				}
 
+				if (!floor1minute(timeLast).equals(floor1minute(timeNow))) {
+					event.world.getPersistentChunks().forEach((chunkPos, ticket) -> {
+						sendChunkLoader(chunkPos, ticket);
+					});
+				}
+
 				timeLastTable.put(event.world, timeNow);
 			}
 
 			private LocalDateTime floor5seconds(LocalDateTime time)
 			{
 				time = time.withSecond(time.getSecond() / 5 * 5);
+				time = time.withNano(0);
+				return time;
+			}
+
+			private LocalDateTime floor1minute(LocalDateTime time)
+			{
+				time = time.withSecond(0);
 				time = time.withNano(0);
 				return time;
 			}
@@ -293,6 +308,30 @@ public class ModInfluxDBUploader
 				builder.addField("count_entities_item", event.world.loadedEntityList.stream().filter(e -> e instanceof EntityItem).count());
 
 				sendPoint(builder.build());
+
+			}
+
+			private void sendChunkLoader(ChunkPos chunkPos, Ticket ticket)
+			{
+				try {
+
+					Point.Builder builder = Point.measurement("forcedchunk");
+
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("MOD", ticket.getModId());
+					builder.addField("mod", ticket.getModId());
+					builder.tag("PLAYER", "" + ticket.getPlayerName());
+					builder.addField("player", "" + ticket.getPlayerName());
+
+					builder.addField("chunk_x", chunkPos.x);
+					builder.addField("chunk_z", chunkPos.z);
+
+					sendPoint(builder.build());
+
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error(4): " + e.getMessage());
+				}
 			}
 		});
 
