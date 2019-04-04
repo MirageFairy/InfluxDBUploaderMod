@@ -25,6 +25,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.ForgeChunkManager.Ticket;
 import net.minecraftforge.common.MinecraftForge;
@@ -34,6 +35,7 @@ import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.entity.item.ItemExpireEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDestroyBlockEvent;
+import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -204,6 +206,13 @@ public class ModInfluxDBUploader
 						sendChunkLoader(event.world, chunkPos, ticket);
 					});
 
+					// ロード中
+					if (event.world.getChunkProvider() instanceof ChunkProviderServer) {
+						for (Chunk chunk : ((ChunkProviderServer) event.world.getChunkProvider()).getLoadedChunks()) {
+							sendChunkLoaded(event.world, chunk);
+						}
+					}
+
 				}
 
 				timeLastTable.put(event.world, timeNow);
@@ -226,6 +235,27 @@ public class ModInfluxDBUploader
 
 					builder.addField("chunk_x", chunkPos.x);
 					builder.addField("chunk_z", chunkPos.z);
+
+					sendPoint(builder.build());
+
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error(4): " + e.getMessage());
+				}
+			}
+
+			private void sendChunkLoaded(World world, Chunk chunk)
+			{
+				try {
+
+					Point.Builder builder = Point.measurement("loadedchunk");
+
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("WORLD_ID", "" + world.provider.getDimension());
+					builder.addField("world_id", world.provider.getDimension());
+
+					builder.addField("chunk_x", chunk.x);
+					builder.addField("chunk_z", chunk.z);
 
 					sendPoint(builder.build());
 
