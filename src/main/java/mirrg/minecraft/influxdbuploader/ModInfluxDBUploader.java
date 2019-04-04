@@ -426,6 +426,70 @@ public class ModInfluxDBUploader
 			}
 		});
 
+		MinecraftForge.EVENT_BUS.register(new Object() {
+			@SubscribeEvent
+			public void handle(ChunkEvent.Load event)
+			{
+				if (!enableUploading) return;
+
+				try {
+					Point.Builder builder = Point.measurement("event");
+
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("TYPE", "chunkLoad");
+					builder.addField("type", "chunkLoad");
+
+					builder.addField("sender", String.format("%s,%s",
+						event.getChunk().x,
+						event.getChunk().z));
+
+					builder.addField("dimension", event.getWorld().provider.getDimension());
+					builder.addField("chunk_x", event.getChunk().x);
+					builder.addField("chunk_z", event.getChunk().z);
+
+					builder.addField("message", String.format("load! (%s,%s):",
+						event.getChunk().x,
+						event.getChunk().z));
+
+					sendPoint(builder.build());
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
+				}
+			}
+
+			@SubscribeEvent
+			public void handle(ChunkEvent.Unload event)
+			{
+				if (!enableUploading) return;
+
+				try {
+					Point.Builder builder = Point.measurement("event");
+
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("TYPE", "chunkUnload");
+					builder.addField("type", "chunkUnload");
+
+					builder.addField("sender", String.format("%s,%s",
+						event.getChunk().x,
+						event.getChunk().z));
+
+					builder.addField("dimension", event.getWorld().provider.getDimension());
+					builder.addField("chunk_x", event.getChunk().x);
+					builder.addField("chunk_z", event.getChunk().z);
+
+					builder.addField("message", String.format("unload! (%s,%s):",
+						event.getChunk().x,
+						event.getChunk().z));
+
+					sendPoint(builder.build());
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
+				}
+			}
+		});
+
 	}
 
 	//
