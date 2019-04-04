@@ -198,12 +198,40 @@ public class ModInfluxDBUploader
 				}
 
 				if (!floor1minute(timeLast).equals(floor1minute(timeNow))) {
+
+					// 強制ロード
 					event.world.getPersistentChunks().forEach((chunkPos, ticket) -> {
 						sendChunkLoader(event.world, chunkPos, ticket);
 					});
+
 				}
 
 				timeLastTable.put(event.world, timeNow);
+			}
+
+			private void sendChunkLoader(World world, ChunkPos chunkPos, Ticket ticket)
+			{
+				try {
+
+					Point.Builder builder = Point.measurement("forcedchunk");
+
+					builder.tag("SERVER", serverName);
+					builder.addField("server", serverName);
+					builder.tag("MOD", ticket.getModId());
+					builder.addField("mod", ticket.getModId());
+					builder.tag("PLAYER", "" + ticket.getPlayerName());
+					builder.addField("player", "" + ticket.getPlayerName());
+					builder.tag("WORLD_ID", "" + world.provider.getDimension());
+					builder.addField("world_id", world.provider.getDimension());
+
+					builder.addField("chunk_x", chunkPos.x);
+					builder.addField("chunk_z", chunkPos.z);
+
+					sendPoint(builder.build());
+
+				} catch (Exception e) {
+					logger.error("InfluxDB Upload Error(4): " + e.getMessage());
+				}
 			}
 
 			private LocalDateTime floor5seconds(LocalDateTime time)
@@ -309,31 +337,6 @@ public class ModInfluxDBUploader
 
 				sendPoint(builder.build());
 
-			}
-
-			private void sendChunkLoader(World world, ChunkPos chunkPos, Ticket ticket)
-			{
-				try {
-
-					Point.Builder builder = Point.measurement("forcedchunk");
-
-					builder.tag("SERVER", serverName);
-					builder.addField("server", serverName);
-					builder.tag("MOD", ticket.getModId());
-					builder.addField("mod", ticket.getModId());
-					builder.tag("PLAYER", "" + ticket.getPlayerName());
-					builder.addField("player", "" + ticket.getPlayerName());
-					builder.tag("WORLD_ID", "" + world.provider.getDimension());
-					builder.addField("world_id", world.provider.getDimension());
-
-					builder.addField("chunk_x", chunkPos.x);
-					builder.addField("chunk_z", chunkPos.z);
-
-					sendPoint(builder.build());
-
-				} catch (Exception e) {
-					logger.error("InfluxDB Upload Error(4): " + e.getMessage());
-				}
 			}
 		});
 
