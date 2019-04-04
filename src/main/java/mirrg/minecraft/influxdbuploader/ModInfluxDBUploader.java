@@ -478,9 +478,10 @@ public class ModInfluxDBUploader
 					builder.addField("chunk_x", event.getChunk().x);
 					builder.addField("chunk_z", event.getChunk().z);
 
-					builder.addField("message", String.format("load! (%s,%s):",
+					builder.addField("message", String.format("load! (%s,%s): @DIM%s",
 						event.getChunk().x,
-						event.getChunk().z));
+						event.getChunk().z,
+						event.getWorld().provider.getDimension()));
 
 					sendPoint(builder.build());
 				} catch (Exception e) {
@@ -509,9 +510,10 @@ public class ModInfluxDBUploader
 					builder.addField("chunk_x", event.getChunk().x);
 					builder.addField("chunk_z", event.getChunk().z);
 
-					builder.addField("message", String.format("unload! (%s,%s):",
+					builder.addField("message", String.format("unload! (%s,%s): @DIM%s",
 						event.getChunk().x,
-						event.getChunk().z));
+						event.getChunk().z,
+						event.getWorld().provider.getDimension()));
 
 					sendPoint(builder.build());
 				} catch (Exception e) {
