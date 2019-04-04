@@ -203,13 +203,13 @@ public class ModInfluxDBUploader
 
 					// 強制ロード
 					event.world.getPersistentChunks().forEach((chunkPos, ticket) -> {
-						sendChunkLoader(event.world, chunkPos, ticket);
+						sendForcedChunk(event.world, chunkPos, ticket);
 					});
 
 					// ロード中
 					if (event.world.getChunkProvider() instanceof ChunkProviderServer) {
 						for (Chunk chunk : ((ChunkProviderServer) event.world.getChunkProvider()).getLoadedChunks()) {
-							sendChunkLoaded(event.world, chunk);
+							sendLoadedChunk(event.world, chunk);
 						}
 					}
 
@@ -218,7 +218,7 @@ public class ModInfluxDBUploader
 				timeLastTable.put(event.world, timeNow);
 			}
 
-			private void sendChunkLoader(World world, ChunkPos chunkPos, Ticket ticket)
+			private void sendForcedChunk(World world, ChunkPos chunkPos, Ticket ticket)
 			{
 				try {
 
@@ -243,7 +243,7 @@ public class ModInfluxDBUploader
 				}
 			}
 
-			private void sendChunkLoaded(World world, Chunk chunk)
+			private void sendLoadedChunk(World world, Chunk chunk)
 			{
 				try {
 
