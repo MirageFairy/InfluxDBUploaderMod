@@ -1,17 +1,11 @@
 package mirrg.minecraft.influxdbuploader;
 
 import java.time.LocalDateTime;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.logging.log4j.Logger;
-import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
-import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
 
 import mirrg.boron.util.UtilsMath;
@@ -60,6 +54,8 @@ public class ModInfluxDBUploader
 	private static String database;
 	private static String serverName;
 
+	private InfluxDBUploader influxDBUploader;
+
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event)
 	{
@@ -76,9 +72,9 @@ public class ModInfluxDBUploader
 			configuration.save();
 		}
 
-		influxDb = InfluxDBFactory.connect(url, userName, password);
-		influxDb.setDatabase(database);
-		startSender();
+		influxDBUploader = new InfluxDBUploader(logger, () -> {
+			return InfluxDBFactory.connect(url, userName, password);
+		}, database);
 
 		MinecraftForge.EVENT_BUS.register(new Object() {
 			@SubscribeEvent
@@ -122,7 +118,7 @@ public class ModInfluxDBUploader
 						builder.addField("message_long", nbt.toString());
 					}
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
 				}
@@ -146,7 +142,7 @@ public class ModInfluxDBUploader
 					builder.addField("sender", event.getUsername());
 					builder.addField("message", event.getMessage());
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(2): " + e.getMessage());
 				}
@@ -173,7 +169,7 @@ public class ModInfluxDBUploader
 						ISuppliterator.ofObjArray(event.getParameters()))
 						.join(" "));
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(3): " + e.getMessage());
 				}
@@ -238,7 +234,7 @@ public class ModInfluxDBUploader
 					builder.tag("CHUNK_Z", "" + chunkPos.z);
 					builder.addField("chunk_z", chunkPos.z);
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(4): " + e.getMessage());
@@ -261,7 +257,7 @@ public class ModInfluxDBUploader
 					builder.tag("CHUNK_Z", "" + chunk.z);
 					builder.addField("chunk_z", chunk.z);
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(4): " + e.getMessage());
@@ -323,7 +319,7 @@ public class ModInfluxDBUploader
 							builder.addField("player_isCreativeMode", playerMP.capabilities.isCreativeMode);
 							builder.addField("player_isFlying", playerMP.capabilities.isFlying);
 
-							sendPoint(builder.build());
+							influxDBUploader.sendPoint(builder.build());
 						}
 					}
 
@@ -369,7 +365,7 @@ public class ModInfluxDBUploader
 				builder.addField("count_entities_player", event.world.playerEntities.size());
 				builder.addField("count_entities_item", event.world.loadedEntityList.stream().filter(e -> e instanceof EntityItem).count());
 
-				sendPoint(builder.build());
+				influxDBUploader.sendPoint(builder.build());
 
 			}
 		});
@@ -413,7 +409,7 @@ public class ModInfluxDBUploader
 						builder.addField("message_long", nbt.toString());
 					}
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
 				}
@@ -453,7 +449,7 @@ public class ModInfluxDBUploader
 						entity.posY,
 						entity.posZ));
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
 				}
@@ -487,7 +483,7 @@ public class ModInfluxDBUploader
 						event.getChunk().z,
 						event.getWorld().provider.getDimension()));
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
 				}
@@ -519,7 +515,7 @@ public class ModInfluxDBUploader
 						event.getChunk().z,
 						event.getWorld().provider.getDimension()));
 
-					sendPoint(builder.build());
+					influxDBUploader.sendPoint(builder.build());
 				} catch (Exception e) {
 					logger.error("InfluxDB Upload Error(1): " + e.getMessage());
 				}
@@ -527,74 +523,6 @@ public class ModInfluxDBUploader
 		});
 
 	}
-
-	//
-
-	private InfluxDB influxDb;
-	private Deque<Point> points = new ArrayDeque<>();
-
-	private final static int POINT_COUNT_MAX = 100;
-
-	public void startSender()
-	{
-		Thread thread = new Thread(() -> {
-			try {
-				while (true) {
-
-					// たまっているポイントを掬う
-					List<Point> points2 = new ArrayList<>();
-					synchronized (points) {
-						points2.addAll(points);
-						points.clear();
-					}
-
-					// ポイントがたまっていたら全部吐き出す（吐き出しはデーモンスレッドではないので中断されない）
-					while (!points2.isEmpty()) {
-						if (points2.size() > POINT_COUNT_MAX) {
-							runSending(points2.subList(0, POINT_COUNT_MAX));
-							points2 = points2.subList(POINT_COUNT_MAX, points2.size());
-						} else {
-							runSending(points2);
-							points2.clear();
-						}
-					}
-
-					// ポイントがたまっていなかったら待つ
-					synchronized (points) {
-						if (points.isEmpty()) {
-							points.wait();
-						}
-					}
-
-				}
-			} catch (InterruptedException e) {
-
-			}
-		}, "InfluxDB Daemon Thread");
-		thread.setDaemon(true);
-		thread.start();
-	}
-
-	public void runSending(List<Point> points) throws InterruptedException
-	{
-		Thread thread = new Thread(() -> {
-			influxDb.write(BatchPoints.database(database)
-				.points(ISuppliterator.ofIterable(points).toArray(Point[]::new))
-				.build());
-		}, "InfluxDB Sending Thread");
-		thread.start();
-		thread.join();
-	}
-
-	public void sendPoint(Point point)
-	{
-		synchronized (points) {
-			points.addLast(point);
-			points.notify();
-		}
-	}
-
-	//
 
 	@EventHandler
 	public void init(FMLInitializationEvent event)
