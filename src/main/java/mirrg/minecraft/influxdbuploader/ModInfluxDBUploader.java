@@ -529,6 +529,8 @@ public class ModInfluxDBUploader
 	private InfluxDB influxDb;
 	private Deque<Point> points = new ArrayDeque<>();
 
+	private final static int POINT_COUNT_MAX = 100;
+
 	public void startSender()
 	{
 		Thread thread = new Thread(() -> {
@@ -543,7 +545,15 @@ public class ModInfluxDBUploader
 					}
 
 					// ポイントがたまっていたら全部吐き出す（吐き出しはデーモンスレッドではないので中断されない）
-					if (!points2.isEmpty()) runSending(points2);
+					while (!points2.isEmpty()) {
+						if (points2.size() > POINT_COUNT_MAX) {
+							runSending(points2.subList(0, POINT_COUNT_MAX));
+							points2 = points2.subList(POINT_COUNT_MAX, points2.size());
+						} else {
+							runSending(points2);
+							points2.clear();
+						}
+					}
 
 					// ポイントがたまっていなかったら待つ
 					synchronized (points) {
