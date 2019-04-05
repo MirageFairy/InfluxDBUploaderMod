@@ -233,7 +233,9 @@ public class ModInfluxDBUploader
 					builder.tag("WORLD_ID", "" + world.provider.getDimension());
 					builder.addField("world_id", world.provider.getDimension());
 
+					builder.tag("CHUNK_X", "" + chunkPos.x);
 					builder.addField("chunk_x", chunkPos.x);
+					builder.tag("CHUNK_Z", "" + chunkPos.z);
 					builder.addField("chunk_z", chunkPos.z);
 
 					sendPoint(builder.build());
@@ -254,7 +256,9 @@ public class ModInfluxDBUploader
 					builder.tag("WORLD_ID", "" + world.provider.getDimension());
 					builder.addField("world_id", world.provider.getDimension());
 
+					builder.tag("CHUNK_X", "" + chunk.x);
 					builder.addField("chunk_x", chunk.x);
+					builder.tag("CHUNK_Z", "" + chunk.z);
 					builder.addField("chunk_z", chunk.z);
 
 					sendPoint(builder.build());
