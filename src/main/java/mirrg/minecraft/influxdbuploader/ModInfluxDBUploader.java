@@ -82,6 +82,7 @@ public class ModInfluxDBUploader
 			{
 				if (!enableUploading) return;
 
+				// アイテムデスポーンイベント
 				try {
 					Point.Builder builder = Point.measurement("event");
 
@@ -131,6 +132,7 @@ public class ModInfluxDBUploader
 			{
 				if (!enableUploading) return;
 
+				// チャットログ
 				try {
 					Point.Builder builder = Point.measurement("message");
 
@@ -155,6 +157,7 @@ public class ModInfluxDBUploader
 			{
 				if (!enableUploading) return;
 
+				// コマンドログ
 				try {
 					Point.Builder builder = Point.measurement("message");
 
@@ -287,6 +290,7 @@ public class ModInfluxDBUploader
 					// world
 					send(event);
 
+					// プレイヤー座標など定時報告
 					// players
 					for (EntityPlayer player : event.world.playerEntities) {
 						if (player instanceof EntityPlayerMP) {
@@ -328,6 +332,7 @@ public class ModInfluxDBUploader
 				}
 			}
 
+			// ワールド定時監視
 			private void send(WorldTickEvent event)
 			{
 				Point.Builder builder = Point.measurement("world");
@@ -376,6 +381,7 @@ public class ModInfluxDBUploader
 			{
 				if (!enableUploading) return;
 
+				// 生物死亡イベント
 				try {
 					Point.Builder builder = Point.measurement("event");
 
@@ -422,6 +428,7 @@ public class ModInfluxDBUploader
 			{
 				if (!enableUploading) return;
 
+				// 生物によるブロック破壊イベント
 				try {
 					Point.Builder builder = Point.measurement("event");
 
@@ -462,6 +469,7 @@ public class ModInfluxDBUploader
 			{
 				if (!enableUploading) return;
 
+				// チャンクロードイベント
 				try {
 					Point.Builder builder = Point.measurement("event");
 
@@ -494,6 +502,7 @@ public class ModInfluxDBUploader
 			{
 				if (!enableUploading) return;
 
+				// チャンクアンロードイベント
 				try {
 					Point.Builder builder = Point.measurement("event");
 
