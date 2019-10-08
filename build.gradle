@@ -64,8 +64,8 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-    compile "mirrg.boron:mirrg.boron.util:3.7+"
-    adder "mirrg.boron:mirrg.boron.util:3.7+"
+    compile group: 'mirrg.boron', name: 'mirrg.boron.util', version: '[3.17,4['
+    adder group: 'mirrg.boron', name: 'mirrg.boron.util', version: '[3.17,4['
     //adder "com.google.code.gson:gson:2.8+"
 	compile group: 'org.influxdb', name: 'influxdb-java', version: '2.12'
 	adder group: 'org.influxdb', name: 'influxdb-java', version: '2.12'
