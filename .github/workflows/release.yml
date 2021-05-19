@@ -22,9 +22,7 @@ jobs:
         distribution: 'adopt'
 
     - name: Check
-      run:
-        v=$(bash get_version.bash) || exit
-        (($(git tag | grep "v$v" | wc -l) == 0)) || exit
+      run: bash .github/workflows/check.bash
 
     - name: Build
       run:
