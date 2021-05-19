@@ -21,9 +21,11 @@ jobs:
 
     - run: git log -n 1
 
-    - id: get-version
+    - name: 'Get version'
+      id: get-version
       run: |
-        value=$(echo ${{ github.ref }} | perl -lpE '$_ = substr $_ ,1')
+        value=$(echo ${{ github.ref }} | perl -lpE 's|^refs/tag/v||')
+        echo "$value"
         echo "::set-output name=value::$value"
 
     - name: 'Build'
@@ -47,8 +49,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: build/libs/InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}-sources.jar
-        asset_name: InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}-sources.jar
+        asset_path: build/libs/InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}.jar
+        asset_name: InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}.jar
         asset_content_type: application/java-archive
 
     - name: 'Upload asset: source'
@@ -57,6 +59,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: build/libs/InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}.jar
-        asset_name: InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}.jar
+        asset_path: build/libs/InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}-sources.jar
+        asset_name: InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}-sources.jar
         asset_content_type: application/java-archive
