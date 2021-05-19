@@ -47,22 +47,11 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: 'Upload asset: jar'
-      uses: actions/upload-release-asset@v1.0.1
+    - uses: actions/upload-release-asset@v1.0.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: build/libs/InfluxDBUploaderMod-${{ steps.get-variables.outputs.version }}.jar
         asset_name: InfluxDBUploaderMod-${{ steps.get-variables.outputs.version }}.jar
-        asset_content_type: application/java-archive
-
-    - name: 'Upload asset: source'
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: build/libs/InfluxDBUploaderMod-${{ steps.get-variables.outputs.version }}-sources.jar
-        asset_name: InfluxDBUploaderMod-${{ steps.get-variables.outputs.version }}-sources.jar
         asset_content_type: application/java-archive
