@@ -28,7 +28,7 @@ jobs:
         echo "$version"
         echo "::set-output name=version::$version"
 
-        minecraft_version=$(cat build.gradle | perl -E 'join("", <>) =~ /version = "(1.12.2-[^"]*)"/ ? say $1 : exit 1') || exit
+        minecraft_version=$(cat build.gradle | perl -E 'join("", <>) =~ /minecraft "net.minecraftforge:forge:([^"]*)"/ ? say $1 : exit 1') || exit
         echo "$minecraft_version"
         echo "::set-output name=minecraft_version::$minecraft_version"
 
