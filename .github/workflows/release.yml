@@ -13,15 +13,22 @@ jobs:
   "build":
     runs-on: ubuntu-latest
     steps:
+
     - uses: actions/checkout@v2
-    - name: Set up JDK 11
-      uses: actions/setup-java@v2
+
+    - uses: actions/setup-java@v2
       with:
         java-version: '8'
         distribution: 'adopt'
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-    - name: Build with Gradle
-      run: ./gradlew build
+
+    - name: Check
+      run:
+        v=$(bash get_version.bash) || exit
+        (($(git tag | grep "v$v" | wc -l) == 0)) || exit
+
+    - name: Build
+      run:
+        bash gradlew build
+
     - name: Test
       run: ls build/libs
