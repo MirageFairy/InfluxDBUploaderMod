@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -21,7 +21,12 @@ jobs:
 
     - run: git log -n 1
 
-    - name: Build
+    - id: get-version
+      run: |
+        value=$(echo ${{ github.ref }} | perl -lpE '$_ = substr $_ ,1')
+        echo "::set-output name=value::$value"
+
+    - name: 'Build'
       run: bash gradlew build
 
     - run: ls build/libs
@@ -36,11 +41,22 @@ jobs:
         draft: false
         prerelease: false
 
-    - uses: actions/upload-release-asset@v1.0.1
+    - name: 'Upload asset: jar'
+      uses: actions/upload-release-asset@v1.0.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/libs/*
-        #asset_name: meu.zip
-        #asset_content_type: application/zip
+        asset_path: build/libs/InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}-sources.jar
+        asset_name: InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}-sources.jar
+        asset_content_type: application/java-archive
+
+    - name: 'Upload asset: source'
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/libs/InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}.jar
+        asset_name: InfluxDBUploaderMod-${{ steps.get-version.outputs.value }}.jar
+        asset_content_type: application/java-archive
