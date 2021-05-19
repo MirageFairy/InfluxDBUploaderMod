@@ -24,7 +24,7 @@ jobs:
     - name: 'Get version'
       id: get-version
       run: |
-        value=$(echo ${{ github.ref }} | perl -lpE 's|^refs/tag/v||')
+        value=$(echo ${{ github.ref }} | perl -lpE 's|^refs/tags/v||')
         echo "$value"
         echo "::set-output name=value::$value"
 
