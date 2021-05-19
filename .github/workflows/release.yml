@@ -5,7 +5,7 @@ on:
     tags:
       - 'v*'
     branches:
-      - 'master'
+      - $default-branch
 
 jobs:
   build:
@@ -24,6 +24,8 @@ jobs:
     - name: Build
       run: bash gradlew build
 
+    - run: ls build/libs
+
 #    - id: create_release
 #      uses: actions/create-release@v1.0.0
 #      env:
@@ -33,7 +35,7 @@ jobs:
 #        #release_name: Release ${{ github.ref }}
 #        draft: false
 #        prerelease: false
-#
+
 #    - uses: actions/upload-release-asset@v1.0.1
 #      env:
 #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,5 +44,3 @@ jobs:
 #        asset_path: ./build/libs/*
 #        #asset_name: meu.zip
 #        #asset_content_type: application/zip
-#
-#    - run: ls build/libs
