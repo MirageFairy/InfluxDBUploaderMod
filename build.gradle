@@ -124,7 +124,8 @@ shadowJar {
     relocate('mirrg.boron', "${packagePrefix}.mirrg.boron")
     relocate('okhttp3', "${packagePrefix}.okhttp3")
     relocate('okio', "${packagePrefix}.okio")
-    relocate('org', "${packagePrefix}.org")
+    relocate('org.influxdb', "${packagePrefix}.org.influxdb")
+    relocate('org.msgpack', "${packagePrefix}.org.msgpack")
     relocate('retrofit2', "${packagePrefix}.retrofit2")
 }
 
