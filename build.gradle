@@ -18,7 +18,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '0.1.29'
+version = '0.1.30'
 group = 'mirrg.minecraft' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'InfluxDBUploaderMod'
 
