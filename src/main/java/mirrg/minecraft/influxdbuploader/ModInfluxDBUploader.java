@@ -3,8 +3,11 @@ package mirrg.minecraft.influxdbuploader;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import okhttp3.OkHttpClient;
 import org.apache.logging.log4j.Logger;
+import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Point;
 
@@ -52,6 +55,7 @@ public class ModInfluxDBUploader
 	private static String userName;
 	private static String password;
 	private static String database;
+	private static float timeout;
 	private static String serverName;
 
 	private InfluxDBUploader influxDBUploader;
@@ -68,12 +72,16 @@ public class ModInfluxDBUploader
 			userName = configuration.getString("userName", "connection", "userName", "User name for connection");
 			password = configuration.getString("password", "connection", "password", "Password for the user");
 			database = configuration.getString("database", "connection", "database001", "Database name of InfluxDB");
+			timeout = configuration.getFloat("timeout", "connection", 5.0f, 0.0f, Float.MAX_VALUE,"InfluxDB Timeout[s]");
 			serverName = configuration.getString("serverName", "data", "Minecraft Server", "Minecraft server name");
 			configuration.save();
 		}
 
 		influxDBUploader = new InfluxDBUploader(logger, () -> {
-			return InfluxDBFactory.connect(url, userName, password);
+			return InfluxDBFactory.connect(url, userName, password, new OkHttpClient.Builder()
+					.readTimeout((long) (timeout * 1000), TimeUnit.MILLISECONDS)
+					.connectTimeout((long) (timeout * 1000), TimeUnit.MILLISECONDS)
+					.writeTimeout((long) (timeout * 1000), TimeUnit.MILLISECONDS));
 		}, database);
 
 		MinecraftForge.EVENT_BUS.register(new Object() {
