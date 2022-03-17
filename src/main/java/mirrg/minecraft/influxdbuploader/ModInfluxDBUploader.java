@@ -103,11 +103,11 @@ public class ModInfluxDBUploader
 					builder.addField("sender", itemStack.getDisplayName());
 
 					builder.addField("item", itemStack.getItem().getRegistryName().toString());
-					builder.addField("metadata", itemStack.getMetadata());
-					builder.addField("count", itemStack.getCount());
+					builder.addField("metadata", (double) (long) itemStack.getMetadata());
+					builder.addField("count", (double) (long) itemStack.getCount());
 					builder.addField("hasNbt", itemStack.hasTagCompound());
 					builder.addField("uuid", event.getEntityItem().getUniqueID().toString());
-					builder.addField("dimension", event.getEntityItem().dimension);
+					builder.addField("dimension", (double) (long) event.getEntityItem().dimension);
 					builder.addField("x", event.getEntityItem().posX);
 					builder.addField("y", event.getEntityItem().posY);
 					builder.addField("z", event.getEntityItem().posZ);
@@ -238,12 +238,12 @@ public class ModInfluxDBUploader
 					builder.tag("PLAYER", "" + ticket.getPlayerName());
 					builder.addField("player", "" + ticket.getPlayerName());
 					builder.tag("WORLD_ID", "" + world.provider.getDimension());
-					builder.addField("world_id", world.provider.getDimension());
+					builder.addField("world_id", (double) (long) world.provider.getDimension());
 
 					builder.tag("CHUNK_X", "" + chunkPos.x);
-					builder.addField("chunk_x", chunkPos.x);
+					builder.addField("chunk_x", (double) (long) chunkPos.x);
 					builder.tag("CHUNK_Z", "" + chunkPos.z);
-					builder.addField("chunk_z", chunkPos.z);
+					builder.addField("chunk_z", (double) (long) chunkPos.z);
 
 					influxDBUploader.sendPoint(builder.build());
 
@@ -261,12 +261,12 @@ public class ModInfluxDBUploader
 					builder.tag("SERVER", serverName);
 					builder.addField("server", serverName);
 					builder.tag("WORLD_ID", "" + world.provider.getDimension());
-					builder.addField("world_id", world.provider.getDimension());
+					builder.addField("world_id", (double) (long) world.provider.getDimension());
 
 					builder.tag("CHUNK_X", "" + chunk.x);
-					builder.addField("chunk_x", chunk.x);
+					builder.addField("chunk_x", (double) (long) chunk.x);
 					builder.tag("CHUNK_Z", "" + chunk.z);
-					builder.addField("chunk_z", chunk.z);
+					builder.addField("chunk_z", (double) (long) chunk.z);
 
 					influxDBUploader.sendPoint(builder.build());
 
@@ -315,15 +315,16 @@ public class ModInfluxDBUploader
 							builder.tag("PLAYER_DISPLAY_NAME", playerMP.getDisplayNameString());
 							builder.addField("player_displayName", playerMP.getDisplayNameString());
 
-							builder.addField("player_dimension", playerMP.dimension);
+							builder.addField("player_dimension", (double) (long) playerMP.dimension);
 							builder.addField("player_x", playerMP.posX);
 							builder.addField("player_y", playerMP.posY);
 							builder.addField("player_z", playerMP.posZ);
 
-							builder.addField("player_invisible", playerMP.isInvisible() ? 1 : 0);
+							long b = playerMP.isInvisible() ? 1 : 0;
+							builder.addField("player_invisible", (double) b);
 							builder.addField("player_health", playerMP.getHealth());
 							builder.addField("player_maxHealth", playerMP.getMaxHealth());
-							builder.addField("player_experienceLevel", playerMP.experienceLevel);
+							builder.addField("player_experienceLevel", (double) (long) playerMP.experienceLevel);
 							builder.addField("player_gamemode", playerMP.interactionManager.getGameType().getName());
 							builder.addField("player_allowEdit", playerMP.capabilities.allowEdit);
 							builder.addField("player_allowFlying", playerMP.capabilities.allowFlying);
@@ -349,34 +350,35 @@ public class ModInfluxDBUploader
 				builder.addField("server", serverName);
 
 				builder.tag("WORLD_ID", "" + event.world.provider.getDimension());
-				builder.addField("world_id", event.world.provider.getDimension());
+				builder.addField("world_id", (double) (long) event.world.provider.getDimension());
 				builder.tag("WORLD_NAME", event.world.provider.getDimensionType().getName());
 				builder.addField("world_name", event.world.provider.getDimensionType().getName());
 
-				builder.addField("time_tick", event.world.getWorldTime());
-				builder.addField("time_day", event.world.getWorldTime() / 24000);
-				builder.addField("time_tickOfDay", event.world.getWorldTime() % 24000);
+				builder.addField("time_tick", (double) event.world.getWorldTime());
+				builder.addField("time_day", (double) (event.world.getWorldTime() / 24000));
+				builder.addField("time_tickOfDay", (double) (event.world.getWorldTime() % 24000));
 				builder.addField("time_clock", String.format("%02d:%02d",
 					(event.world.getWorldTime() % 24000) / 1000,
 					UtilsMath.trim((int) (((event.world.getWorldTime() % 24000) % 1000) / 1000.0 * 60.0), 0, 59)));
 				builder.addField("time_raining", event.world.isRaining());
 				builder.addField("time_daytime", event.world.isDaytime());
 				builder.addField("time_thundering", event.world.isThundering());
-				builder.addField("time_moonPhase", event.world.provider.getMoonPhase(event.world.getWorldTime()));
+				builder.addField("time_moonPhase", (double) (long) event.world.provider.getMoonPhase(event.world.getWorldTime()));
 
-				builder.addField("count_chunks", event.world.getChunkProvider() instanceof ChunkProviderServer
+				long b = event.world.getChunkProvider() instanceof ChunkProviderServer
 					? ((ChunkProviderServer) event.world.getChunkProvider()).getLoadedChunkCount()
-					: -1);
+					: -1;
+				builder.addField("count_chunks", (double) b);
 
-				builder.addField("count_tileEntities", event.world.loadedTileEntityList.size());
+				builder.addField("count_tileEntities", (double) (long) event.world.loadedTileEntityList.size());
 
-				builder.addField("count_entities", event.world.loadedEntityList.size());
-				builder.addField("count_entities_monster", event.world.countEntities(EnumCreatureType.MONSTER, false));
-				builder.addField("count_entities_creature", event.world.countEntities(EnumCreatureType.CREATURE, false));
-				builder.addField("count_entities_waterCreature", event.world.countEntities(EnumCreatureType.WATER_CREATURE, false));
-				builder.addField("count_entities_ambient", event.world.countEntities(EnumCreatureType.AMBIENT, false));
-				builder.addField("count_entities_player", event.world.playerEntities.size());
-				builder.addField("count_entities_item", event.world.loadedEntityList.stream().filter(e -> e instanceof EntityItem).count());
+				builder.addField("count_entities", (double) (long) event.world.loadedEntityList.size());
+				builder.addField("count_entities_monster", (double) (long) event.world.countEntities(EnumCreatureType.MONSTER, false));
+				builder.addField("count_entities_creature", (double) (long) event.world.countEntities(EnumCreatureType.CREATURE, false));
+				builder.addField("count_entities_waterCreature", (double) (long) event.world.countEntities(EnumCreatureType.WATER_CREATURE, false));
+				builder.addField("count_entities_ambient", (double) (long) event.world.countEntities(EnumCreatureType.AMBIENT, false));
+				builder.addField("count_entities_player", (double) (long) event.world.playerEntities.size());
+				builder.addField("count_entities_item", (double) event.world.loadedEntityList.stream().filter(e -> e instanceof EntityItem).count());
 
 				influxDBUploader.sendPoint(builder.build());
 
@@ -403,7 +405,7 @@ public class ModInfluxDBUploader
 
 					builder.addField("class", entity.getClass().getName());
 					builder.addField("uuid", entity.getUniqueID().toString());
-					builder.addField("dimension", entity.dimension);
+					builder.addField("dimension", (double) (long) entity.dimension);
 					builder.addField("x", entity.posX);
 					builder.addField("y", entity.posY);
 					builder.addField("z", entity.posZ);
@@ -451,10 +453,10 @@ public class ModInfluxDBUploader
 					builder.addField("class", entity.getClass().getName());
 					builder.addField("uuid", entity.getUniqueID().toString());
 					builder.addField("state", event.getState().toString());
-					builder.addField("dimension", entity.dimension);
-					builder.addField("x", event.getPos().getX());
-					builder.addField("y", event.getPos().getY());
-					builder.addField("z", event.getPos().getZ());
+					builder.addField("dimension", (double) (long) entity.dimension);
+					builder.addField("x", (double) (long) event.getPos().getX());
+					builder.addField("y", (double) (long) event.getPos().getY());
+					builder.addField("z", (double) (long) event.getPos().getZ());
 
 					builder.addField("message", String.format("(%s).destroy!(%s):@(DIM%d,%.0f,%.0f,%.0f)",
 						entity.getName(),
@@ -490,9 +492,9 @@ public class ModInfluxDBUploader
 						event.getChunk().x,
 						event.getChunk().z));
 
-					builder.addField("dimension", event.getWorld().provider.getDimension());
-					builder.addField("chunk_x", event.getChunk().x);
-					builder.addField("chunk_z", event.getChunk().z);
+					builder.addField("dimension", (double) (long) event.getWorld().provider.getDimension());
+					builder.addField("chunk_x", (double) (long) event.getChunk().x);
+					builder.addField("chunk_z", (double) (long) event.getChunk().z);
 
 					builder.addField("message", String.format("load! (%s,%s): @DIM%s",
 						event.getChunk().x,
@@ -523,9 +525,9 @@ public class ModInfluxDBUploader
 						event.getChunk().x,
 						event.getChunk().z));
 
-					builder.addField("dimension", event.getWorld().provider.getDimension());
-					builder.addField("chunk_x", event.getChunk().x);
-					builder.addField("chunk_z", event.getChunk().z);
+					builder.addField("dimension", (double) (long) event.getWorld().provider.getDimension());
+					builder.addField("chunk_x", (double) (long) event.getChunk().x);
+					builder.addField("chunk_z", (double) (long) event.getChunk().z);
 
 					builder.addField("message", String.format("unload! (%s,%s): @DIM%s",
 						event.getChunk().x,
